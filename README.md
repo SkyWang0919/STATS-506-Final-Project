@@ -21,3 +21,8 @@ In daily life, diet energy intake has become a crucial factor when judging wheth
 * number of people in household (DMDHHSIZ)
 * number of people in family (DMDFMSIZ)
 
+
+### To Do List:
+* Finish the write-up.
+* Manipulate further analysis in the 3-analysis.R
+

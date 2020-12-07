@@ -35,6 +35,10 @@ There might be two possible approaches
 * Conclusion
 
 
+### Software/Tools:
+* R – tidyverse, data.table, ggplot2
+
+
 ### To Do List:
 * Finish the write-up.
 * Manipulate further analysis in the 3-analysis.R

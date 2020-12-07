@@ -29,7 +29,7 @@ The whole project can be divided into 4 parts:
 * Pre-analysis: 
   + Residual diagnosis, abnormal observation diagnosis, variable selection, collinearity detection.
 * Model analysis: 
-There might be two possible approaches
+<br> There might be two possible approaches
   + Using **regression splines** to fit the non-linear model. For instance, some demographic variables like age might not have a uniform pattern on energy consumption (infants, teenagers, adults, and elders have a significant difference). We can use regression splines to divide the age variable into several intervals by using knots and combine different splines into a whole model. At the same time, we may try different variable combinations by adding or deleting variables. These might show the marginal effect on our problem.
   + Using **non-Gaussian GLM** consider using the **Gamma** link function. From the analysis we can see that the residuals seem to be non-uniform in variance. Meanwhile, the distribution of residual seem not come from a normal distribution. Taking consider of these factors, we may try to use a non-Gaussian Generalized Linear Model with link function (e.g. Gamma).
 * Conclusion

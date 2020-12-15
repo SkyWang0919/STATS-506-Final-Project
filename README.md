@@ -11,28 +11,34 @@ Diet energy intake has become a crucial factor when judging whether someone main
 [NHANES 2017-2018 Demographics Data](https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Demographics&CycleBeginYear=2017)
 
 
-### Variables:
-* id (SEQN)
-* energy intake (DR1KTCAL)
-* poverty income ratio (INDFMPIR)
-* gender (RIAGENDER)
-* age (RIDAGEYR), age_square
-* pergnancy (RIDEXPRG)
-* number of people in household (DMDHHSIZ)
-* number of people in family (DMDFMSIZ)
+### Variables
+Variable `Original Name` | Description
+------------ | ------------------------------------------------------------
+id `SEQN` | unique respondent sequence number
+energy intake `DR1KTCAL` | energy intake of the investigated date (kcal)
+poverty income ratio `INDFMPIR` | using as the criterion for household income 
+gender `RIAGENDER` | respondent gender
+age `RIDAGEYR` | respondent age
+age_group | divide age into 'child', 'teenager', 'adult', and 'elder'
+pregnancy `RIDEXPRG` | status of respondent's pregnancy
+num_people_hd `DMDHHSIZ`| number of people in the household
+num_people_fm `DMDFMSIZ`| number of people in the family
+weight `WTDRD1` | using for sample weights
+psu `SDMVPSU` | using for survey design (cluster)
+strata `SDMVSTRA` | using for survey design (strata)
 
+### Methods
+The whole analysis contains 3 parts: 
 
-### Procedure：
-The whole project can be divided into 4 parts:
-* Data cleaning: 
-  + Merge the dataset, select variables we want, and remove the NA values from our data.
-* Pre-analysis: 
-  + Residual diagnosis, abnormal observation diagnosis, variable selection, collinearity detection.
-* Model analysis: 
-<br> There might be two possible approaches
-  + Using **regression splines** to fit the non-linear model. For instance, some demographic variables like age might not have a uniform pattern on energy consumption (infants, teenagers, adults, and elders have a significant difference). We can use regression splines to divide the age variable into several intervals by using knots and combine different splines into a whole model. At the same time, we may try different variable combinations by adding or deleting variables. These might show the marginal effect on our problem.
-  + Using **non-Gaussian GLM** consider using the **Gamma** link function. From the analysis we can see that the residuals seem to be non-uniform in variance. Meanwhile, the distribution of residual seem not come from a normal distribution. Taking consider of these factors, we may try to use a non-Gaussian Generalized Linear Model with link function (e.g. Gamma).
-* Conclusion
+*  Data cleaning: Merge the dataset, select variables we want, and remove the *NA* values from our data.
+*  Model selection: Residual diagnosis & normality checking for model selection. 
+*  Main analysis: 
+We use the generalized linear model (GLM) with a Gamma link function to analyze the effect of `income` (our focus) and other interesting & influential factors like `gender` and `age`.
+    * `income`: 
+        +  Part1: Using `pir` as the only predictor. A 95% confidence level t-test is implemented to test the effect of income by using the model coefficient summary.
+        +  Part2: Using all possible variables as predictors. Another 95% confidence level t-test is implemented to test the effect of income taking into consideration other factors.
+    *  `gender`: A one-way ANOVA test is implemented. We use Tukey's Honest Significant Difference 95% confidence interval to test the difference between *male* and *female*.
+    *  `age`: Here we divide age into 4 different groups. A one-way ANOVA test is implemented. For all pairwise comparisons between age groups, we use Tukey's Honest Significant Difference 95% confidence interval. Additionally, a regression spline analysis is implemented to describe the various pattern among different age groups.
 
 
 ### Software/Tools:

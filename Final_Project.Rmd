@@ -1,0 +1,195 @@
+---
+title: "Stats 506, F20, Final Project Report"
+author: "Tianshi Wang, wangts@umich.edu"
+date: "December 15, 2020"
+output: 
+  html_document:
+    highlight: pygments
+---
+
+
+```{r setup, include=FALSE}
+# 79: -------------------------------------------------------------------------
+#! We generally don't need to see the code in the results document.
+knitr::opts_chunk$set(echo = FALSE)
+#! Make sure all chunks have a label. This one is labelled 'setup'.
+```
+
+
+```{r project_prep, message=FALSE, warning=FALSE, include=FALSE}
+# Run the supporting scripts so this document to focus on reporting: ----------
+library(tidyverse)
+setwd("C:/Users/lenovo/Desktop/FinalProject")
+source('./1-preperation.R')
+source('./2-diagnosis.R')
+source('./3-model.R')
+```
+
+
+### Introduction
+Dietary energy intake has become a crucial factor when judging whether someone maintains a healthy lifestyle. Meanwhile, the amount of household income is one of the most important criteria of household economic status. It becomes a pretty interesting topic to explore the relationship between household income and dietary energy intake. 
+
+Intuitively, it seems that rich people tend to intake more energy than people with low income since they have more budgets for buying food. Hence, we raise the question "Do people in the US from households with higher income consume more calories? ". Later analysis using R will provide us evidence to support or cast doubt on our initial hypothesis/question. Besides income, we will also consider some other demographic factors like age, gender, etc.  By exploring the influence they play on our core relationship and the marginal effect might bring us some more interesting findings.
+
+
+
+### Data / Methods
+#### **Data Source**
+In this project, we use datasets from two different sources.  
+
+>*  [NHANES 2017-2018 Dietary Data](https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Dietary&CycleBeginYear=2017)  
+*  [NHANES 2017-2018 Demographics Data](https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Demographics&CycleBeginYear=2017)
+
+
+**The first dataset**  includes detailed dietary intake information from NHANES participants.
+
+**The second dataset** provides individual, family, and household-level demographic information.
+
+#### **Variables**
+
+Variable `Original Name` | Description
+------------ | ------------------------------------------------------------
+id `SEQN` | unique respondent sequence number
+energy intake `DR1KTCAL` | energy intake of the investigated date (kcal)
+poverty income ratio `INDFMPIR` | using as the criterion for household income 
+gender `RIAGENDER` | respondent gender
+age `RIDAGEYR` | respondent age
+age_group | divide age into 'child', 'teenager', 'adult', and 'elder'
+pregnancy `RIDEXPRG` | status of respondent's pregnancy
+num_people_hd `DMDHHSIZ`| number of people in the household
+num_people_fm `DMDFMSIZ`| number of people in the family
+weight `WTDRD1` | using for sample weights
+psu `SDMVPSU` | using for survey design (cluster)
+strata `SDMVSTRA` | using for survey design (strata)
+
+#### **Methods**
+
+[Link to the GitHub repository](https://github.com/SkyWang0919/STATS-506-Final-Project)
+
+
+The whole analysis contains 3 parts: 
+
+*  Data cleaning: Merge the dataset, select variables we want, and remove the *NA* values from our data.
+*  Model selection: Residual diagnosis & normality checking for model selection. 
+*  Main analysis: 
+We use the generalized linear model (GLM) with a Gamma link function to analyze the effect of `income` (our focus) and other interesting & influential factors like `gender` and `age`.
+    * `income`: 
+        +  Part1: Using `pir` as the only predictor. A 95% confidence level t-test is implemented to test the effect of income by using the model coefficient summary.
+        +  Part2: Using all possible variables as predictors. Another 95% confidence level t-test is implemented to test the effect of income taking into consideration other factors.
+    *  `gender`: A one-way ANOVA test is implemented. We use Tukey's Honest Significant Difference 95% confidence interval to test the difference between *male* and *female*.
+    *  `age`: Here we divide age into 4 different groups. A one-way ANOVA test is implemented. For all pairwise comparisons between age groups, we use Tukey's Honest Significant Difference 95% confidence interval. Additionally, a regression spline analysis is implemented to describe the various pattern among different age groups.
+
+
+### Results
+
+#### **Model selection**
+```{r model selection, echo=FALSE, message=FALSE, warning=FALSE, fig.cap=cap1}
+cap1 = paste(
+  "**Figure 1.** *Residual Diagnosis of data1*"
+)
+par(mfrow = c(1, 2), oma = c(0, 0, 0, 0))
+# par(mfrow = c(1, 2), mar = c(4, 2, 3, 2), oma = c(0.5, 1, 1, 0.5))
+
+## 1. analysis for residuals
+plot(lm1$fitted, lm1$residuals, xlab = "Fitted", ylab = "Residuals", main = "Residual Plot")
+abline(h=0, col = "red") # showed non-uniform in variance
+  
+## 2. check for normality
+qqnorm(lm1$residuals)
+qqline(lm1$residuals) # showed heavy tail on the right.
+
+```
+
+The plot above contains two pieces of information: <br>
+
+*  Residuals distribution becomes wider and wider from the left to the right, which means residuals are non-uniform in variance.
+*  Normal Q-Q Plot shows long-tail on the right.
+
+Hence we decide to use a **generalized linear model** instead of a simple linear model (where the variance of $\epsilon$ supposed to be a constant). We choose to use a **Gamma link function** since the response variable `energy` always larger than 0. Additionally, we take a **log transformation** on the value of energy to scale the large number into an appropriate range.
+
+
+#### **Variable Selection & Influential Points Detection**
+
+According to the result, we keep the first 6 important variables (relatively low p-values) in this problem which are `pir`, `gender`, `age`, `age^2`, `age^3`, and `num_people_fm`. We also find three influential points: 2580, 3837, 5417. The further analysis will be done without them.
+
+
+#### **Income: Part 1**
+
+In the first part, we only consider the single predictor `pir`.
+```{r income1}
+co_0 = summary(model0)$coefficients
+knitr::kable(co_0)
+```
+
+Since the estimation of `pir` tends to be a negative number, we construct the following t-test with 95% confidence level: <br>
+
+  *  H<sub>0</sub>: $\beta$ <sub>pir</sub> = 0
+  *  H<sub>1</sub>: $\beta$ <sub>pir</sub> < 0
+
+Here $t = -3.218099$, $p-value = (1-(1-0.006193526/2)) = 0.003096763 < 0.05$. So we reject H<sub>0</sub> and accept H<sub>1</sub> that $\beta$ <sub>pir</sub> < 0. Different from our initial guess, people with **higher income** tend to intake **lower energy**.
+
+However, it might not be the actual case. Since the energy are influenced by a lot of other factors besides `pir`, the model above is just a "naive" trial which bring us a overall idea. There will be more analysis to make the problem clear.
+
+
+#### **Income: Part 2**
+
+In the second part, we consider the predictor `pir` together with other important variables `age`, `gender`, `age^2`, `age^3`, and `num_people_fm` we selected.
+
+```{r income2}
+co_1a = summary(model1a)$coefficients
+knitr::kable(co_1a)
+```
+
+
+Similarly, we construct a t-test with 95% confidence level: <br>
+
+  *  H<sub>0</sub>: $\beta$ <sub>pir</sub> = 0
+  *  H<sub>1</sub>: $\beta$ <sub>pir</sub> < 0
+
+Here $t = -1.797346$, $p-value = (1-(1-0.1058342/2)) = 0.0529171 \approx  0.05$ which is very close to our criterion. It seems that there exist a relative weak **negative correlation** between income and energy.
+
+
+#### **Gender** 
+
+In this part, we implement a one-way ANOVA test. We use the Tukey's Honest Significant Confidence Interval to measure the difference: <br>
+
+> $(\hat{y} - \hat{x}) \pm q(1-\alpha, I, df)/\sqrt{2}*se(\hat{y} - \hat{x})$
+
+The difference estimation and confidence interval:
+```{r gender1}
+gender_dif = TukeyHSD(gender_aov)$gender
+knitr::kable(gender_dif)
+```
+The difference of Female-Male tends to be a significant negative number.
+
+
+#### **Age**
+For age, we use the criteria {age <= 10: child (**A**), 10 < age <= 18: teenager (**B**), 18 < age <= 60: adult (**C**), 60 < age : elder (**D**)}. Again we implement the one-way ANOVA test and use the Tukey's Honest Significant Confidence Interval to make the pairwise comparisons. Additionally, we construct a regression spline model to describe the difference between age groups.
+```{r age1, fig.cap=cap2}
+cap2 = paste(
+  "**Figure 2.** *Age Group Comparisons & Regression Splines*"
+)
+par(mfrow = c(1, 2))
+# par(mfrow = c(1, 2), pin = c(4, 1), mar = c(2, 2, 2, 2), oma = c(0, 0, 0, 0))
+plot(TukeyHSD(age_aov), col = 'darkgreen')
+plot(data1[-remove,]$age, log(data1[-remove,]$energy), xlab = "Age", ylab = "log(Energy)", main = "Regression Spline")
+lines(data1[-remove,]$age, fitted(fit_spline),lwd = 3, col = 2)
+```
+
+Energy consuming among different age groups have the pattern: adults > teenager $\approx$ elder > child. The plot of regression spline also shows that the diet energy intake increase from children $\longrightarrow$ teenagers $\longrightarrow$ adults, then decrease from adults $\longrightarrow$ elders.
+
+
+### Conclusion
+Different from our original hypothesis, people in the US from households with higher income tend to consume slightly fewer calories. Meanwhile, males intake much more energy than females. Additionally, adults and teenagers have a higher level of dietary energy consumption than elders and children.
+
+
+### Discussion
+In this project, I have learned to analyze the relationship between diet energy and demographic factors both integrally and separately. It is a pretty interesting question with an overall analysis which contains all necessary components. The logic is clear and coherent.
+
+There are still some limitations in this project. For instance: <br>
+
+*  I didn't consider the interaction terms between demographic variables (e.g. age:gender).
+*  I only used the dietary data for one single day which might lead to some deviations caused by potential contingency.
+*  For the ANOVA test, I simply added the weights directly into the function without mentioning the survey design as what I did in the GLM part. 
+
+

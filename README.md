@@ -44,7 +44,3 @@ We use the generalized linear model (GLM) with a Gamma link function to analyze 
 ### Software/Tools:
 * R – tidyverse, data.table, ggplot2
 
-
-### To Do List:
-* Finish the write-up.
-* Manipulate further analysis in the 3-analysis.R
